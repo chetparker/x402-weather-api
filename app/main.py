@@ -94,8 +94,26 @@ async def health_check():
     return {"status": "ok", "version": "1.0.0"}
 
 
+_ENDPOINTS = [
+    {"method": "POST", "path": "/current", "price": "0.001", "description": "Current weather conditions"},
+    {"method": "POST", "path": "/forecast", "price": "0.001", "description": "Multi-day weather forecast (1-16 days)"},
+    {"method": "POST", "path": "/historical", "price": "0.001", "description": "Historical weather data"},
+    {"method": "POST", "path": "/air-quality", "price": "0.001", "description": "Air quality index"},
+]
+
+
 @app.get("/.well-known/x402.json", include_in_schema=False)
 async def well_known_x402():
+    from app.bazaar import get_metadata
+
+    endpoints = []
+    for ep in _ENDPOINTS:
+        meta = get_metadata(ep["path"])
+        entry = dict(ep)
+        if meta:
+            entry["extensions"] = {"bazaar": meta}
+        endpoints.append(entry)
+
     return {
         "x402Version": 2,
         "service": {
@@ -111,10 +129,5 @@ async def well_known_x402():
             "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             "facilitator": settings.x402_facilitator_url,
         },
-        "endpoints": [
-            {"method": "POST", "path": "/current", "price": "$0.001", "description": "Current weather conditions"},
-            {"method": "POST", "path": "/forecast", "price": "$0.001", "description": "7-day weather forecast"},
-            {"method": "POST", "path": "/historical", "price": "$0.002", "description": "Historical weather data"},
-            {"method": "POST", "path": "/air-quality", "price": "$0.001", "description": "Air quality index"},
-        ],
+        "endpoints": endpoints,
     }
